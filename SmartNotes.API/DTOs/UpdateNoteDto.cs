@@ -2,8 +2,8 @@ namespace SmartNotes.API.DTOs
 {
     public class UpdateNoteDto
     {
-        public string Title { get; set; }
-        public string Content { get; set; }
-        public string Tags { get; set; }
+        public required string Title { get; set; }
+        public required string Content { get; set; }
+        public required string Tags { get; set; }
     }
 } 

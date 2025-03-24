@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using SmartNotes.API.Data;
+using SmartNotes.API.Mappings;
 
 namespace SmartNotes.API
 {
@@ -12,6 +13,9 @@ namespace SmartNotes.API
             // Add services to the container.
             builder.Services.AddDbContext<AppDbContext>(options =>
                 options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+            // Add AutoMapper with specific profile
+            builder.Services.AddAutoMapper(typeof(NoteAutoMapperProfile));
 
             builder.Services.AddControllers();
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
