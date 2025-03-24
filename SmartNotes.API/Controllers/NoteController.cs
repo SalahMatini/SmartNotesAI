@@ -4,27 +4,32 @@ using AutoMapper;
 using SmartNotes.API.Data;
 using SmartNotes.API.DTOs;
 using SmartNotes.API.Entities;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
+
 
 namespace SmartNotes.API.Controllers
 {
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
-    public class NoteController : ControllerBase
+    public class NoteController(AppDbContext context, IMapper mapper) : ControllerBase
     {
-        private readonly AppDbContext _context;
-        private readonly IMapper _mapper;
+        private readonly AppDbContext _context = context;
+        private readonly IMapper _mapper = mapper;
 
-        public NoteController(AppDbContext context, IMapper mapper)
+        private int GetUserId()
         {
-            _context = context;
-            _mapper = mapper;
+            return int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
         }
 
         // GET: api/Note
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Note>>> GetNotes()
         {
-            return await _context.Notes.ToListAsync();
+            return await _context.Notes
+                .Where(n => n.UserId == GetUserId().ToString())
+                .ToListAsync();
         }
 
         // GET: api/Note/5
@@ -34,9 +39,10 @@ namespace SmartNotes.API.Controllers
             var note = await _context.Notes.FindAsync(id);
 
             if (note == null)
-            {
                 return NotFound();
-            }
+
+            if (note.UserId != GetUserId().ToString())
+                return Forbid();
 
             return note;
         }
@@ -46,6 +52,7 @@ namespace SmartNotes.API.Controllers
         public async Task<ActionResult<Note>> CreateNote(CreateNoteDto createNoteDto)
         {
             var note = _mapper.Map<Note>(createNoteDto);
+            note.UserId = GetUserId().ToString();
             note.CreatedAt = DateTime.UtcNow;
             note.UpdatedAt = DateTime.UtcNow;
 
@@ -61,15 +68,15 @@ namespace SmartNotes.API.Controllers
         {
             var note = await _context.Notes.FindAsync(id);
             if (note == null)
-            {
                 return NotFound();
-            }
+
+            if (note.UserId != GetUserId().ToString())
+                return Forbid();
 
             _mapper.Map(updateNoteDto, note);
             note.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
-
             return NoContent();
         }
 
@@ -79,9 +86,10 @@ namespace SmartNotes.API.Controllers
         {
             var note = await _context.Notes.FindAsync(id);
             if (note == null)
-            {
                 return NotFound();
-            }
+
+            if (note.UserId != GetUserId().ToString())
+                return Forbid();
 
             _context.Notes.Remove(note);
             await _context.SaveChangesAsync();
